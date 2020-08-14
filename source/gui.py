@@ -356,7 +356,7 @@ class MainApplication:
 
     def display_results(self, results):
         # Refresh summary
-        new_text = 'The above conditions occurred {} times over 126 years (1889-2015)'.format(len(results))
+        new_text = 'The specified conditions have occurred {} times over 126 years (1889-2015)'.format(len(results))
         self.results_summary['text'] = new_text
         self.results_summary.grid(row=1, column=0, padx=10, pady=(5, 10), sticky='ew')
 
