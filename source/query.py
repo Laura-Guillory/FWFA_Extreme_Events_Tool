@@ -46,15 +46,15 @@ def make_query(parameters):
         arrays_to_combine.append(data.windspeed.where(data.windspeed > parameters['wind']['value']))
 
     # Combine results
-    combined_data = numpy.isnan(arrays_to_combine[0].values[0])
+    combined_data = ~numpy.isnan(arrays_to_combine[0].values[0])
     for i in range(1, len(arrays_to_combine)):
-        combined_data = numpy.logical_or(numpy.isnan(combined_data), numpy.isnan(arrays_to_combine[i].values[0]))
+        combined_data = numpy.logical_and(combined_data, ~numpy.isnan(arrays_to_combine[i].values[0]))
 
     # Count consecutive days and record instances
     results = []
     i_consecutive = 0
     for i_date in range(0, data.time.size):
-        if combined_data[i_date]:
+        if not combined_data[i_date]:
             if i_consecutive >= parameters['consecutive_days']:
                 start_date = data.time.values[i_date-i_consecutive]
                 start_date = pandas.to_datetime(start_date)
