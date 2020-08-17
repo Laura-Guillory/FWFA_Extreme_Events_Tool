@@ -12,10 +12,10 @@ def get_all_stations():
 def make_query(parameters):
     # Load data
     data = xarray.open_mfdataset([
-        'data/minimum temperature/cropped_minimum_temperature.nc',
-        'data/maximum temperature/cropped_maximum_temperature.nc',
-        'data/precipitation/cropped_precipitation.nc',
-        'data/wind/cropped_wind.nc'
+        'data/minimum_temperature.nc',
+        'data/maximum_temperature.nc',
+        'data/precipitation.nc',
+        'data/windspeed.nc'
     ], join='override')
 
     # Narrow down data to parameters
