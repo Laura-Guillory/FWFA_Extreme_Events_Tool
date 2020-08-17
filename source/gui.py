@@ -1,6 +1,6 @@
 import tkinter
 from tkinter import ttk, messagebox
-import query
+from source import query
 import threading
 
 
@@ -246,8 +246,12 @@ class MainApplication:
         self.popup.destroy()
 
     def threaded_query(self, query_parameters):
-        results = query.make_query(query_parameters)
-        self.display_results(results)
+        try:
+            results = query.make_query(query_parameters)
+            self.display_results(results)
+        except Exception as e:
+            messagebox.showerror(title='Error', message=str(e))
+            self.window.quit()
 
     def validate_input(self):
         temperature_condition = self.temperature_condition_combobox.get()
@@ -422,6 +426,3 @@ class MainApplication:
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
 
-
-if __name__ == '__main__':
-    MainApplication()
