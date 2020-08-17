@@ -15,7 +15,7 @@ def make_query(parameters):
         'data/minimum temperature/cropped_minimum_temperature.nc',
         'data/maximum temperature/cropped_maximum_temperature.nc',
         'data/precipitation/cropped_precipitation.nc',
-        #'data/wind/cropped_wind.nc'
+        'data/wind/cropped_wind.nc'
     ], join='override')
 
     # Narrow down data to parameters
