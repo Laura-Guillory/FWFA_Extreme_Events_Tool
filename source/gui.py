@@ -16,6 +16,9 @@ def validate_number(value):
 
 class MainApplication:
     def __init__(self):
+        self.popup = None
+        self.canvas = None
+
         # Set up main window
         self.window = tkinter.Tk()
         self.window.columnconfigure(0, weight=1)
@@ -222,7 +225,25 @@ class MainApplication:
                 'value': float(self.wind_entry.get()) if self.wind_entry.get() != '' else None
             }
         }
+        self.open_popup()
         threading.Thread(target=self.threaded_query, args=(query_parameters,)).start()
+
+    def open_popup(self):
+        x = self.window.winfo_x()
+        y = self.window.winfo_y()
+        window_width = self.window.winfo_width()
+        window_height = self.window.winfo_height()
+        self.popup = tkinter.Toplevel(width=300, height=150)
+        self.popup.geometry('+%d+%d' % (x + (window_width/2) - 100, y + (window_height/2) - 50))
+        self.popup.grab_set()
+        tkinter.Label(self.popup, text='Processing...').grid(row=0, column=0, padx=10, pady=10)
+        progress = ttk.Progressbar(self.popup, orient=tkinter.HORIZONTAL, length=200, mode='indeterminate')
+        progress.grid(row=1, column=0, padx=10, pady=10)
+        progress.start(10)
+
+    def close_popup(self):
+        self.popup.grab_release()
+        self.popup.destroy()
 
     def threaded_query(self, query_parameters):
         results = query.make_query(query_parameters)
@@ -367,17 +388,18 @@ class MainApplication:
         self.results_container = tkinter.Frame(master=self.column_right, width=50, borderwidth=3, relief='sunken')
         self.results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
         self.results_container.rowconfigure(0, weight=1)
-        canvas = tkinter.Canvas(self.results_container, width=200)
-        scrollbar = tkinter.Scrollbar(self.results_container, orient="vertical", command=canvas.yview)
+        self.canvas = tkinter.Canvas(self.results_container, width=200)
+        scrollbar = tkinter.Scrollbar(self.results_container, orient="vertical", command=self.canvas.yview)
         scrollbar.grid(row=0, column=1, sticky='nsew')
-        scrollable_frame = tkinter.Frame(canvas)
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=scrollable_frame.bbox("all")))
+        scrollable_frame = tkinter.Frame(self.canvas)
+        scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=scrollable_frame.bbox("all")))
         scrollable_frame.columnconfigure(0, weight=1)
         scrollable_frame.columnconfigure(1, weight=1)
-        canvas_frame = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_frame, width=e.width-4))
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.grid(row=0, column=0, sticky='nsew')
+        canvas_frame = self.canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        self.canvas.bind('<Configure>', lambda e: self.canvas.itemconfig(canvas_frame, width=e.width-4))
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.window.bind_all('<MouseWheel>', self._on_mousewheel)
+        self.canvas.grid(row=0, column=0, sticky='nsew')
 
         # Create results table
         table_head1 = tkinter.Label(master=scrollable_frame, text='Start Date', borderwidth=1, relief='ridge',
@@ -395,6 +417,10 @@ class MainApplication:
                                    anchor='w', padx=10)
             label1.grid(row=i+1, column=0, sticky='nsew')
             label2.grid(row=i+1, column=1, sticky='nsew')
+        self.close_popup()
+
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
 
 
 if __name__ == '__main__':
