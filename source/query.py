@@ -1,10 +1,12 @@
 import xarray
 import numpy
 import pandas
+import sys
+import os
 
 
 def get_all_stations():
-    with open('data/locations.txt', 'r') as file:
+    with open(resource_path('data/locations.txt'), 'r') as file:
         stations = file.read().split('\n')
     return stations
 
@@ -12,10 +14,10 @@ def get_all_stations():
 def make_query(parameters):
     # Load data
     data = xarray.open_mfdataset([
-        'data/minimum_temperature.nc',
-        'data/maximum_temperature.nc',
-        'data/precipitation.nc',
-        'data/windspeed.nc'
+        resource_path('data/minimum_temperature.nc'),
+        resource_path('data/maximum_temperature.nc'),
+        resource_path('data/precipitation.nc'),
+        resource_path('data/windspeed.nc')
     ], join='override')
 
     # Narrow down data to parameters
@@ -71,3 +73,13 @@ def make_query(parameters):
         end_date = pandas.to_datetime(end_date)
         results.append((start_date, end_date))
     return results
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)

@@ -1,2 +1,6 @@
 .idea/
 scratch/
+data/
+build/
+dist/
+ExtremeEvents.spec
