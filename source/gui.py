@@ -4,6 +4,11 @@ from source import query
 import threading
 
 
+# Used to ensure that the user has entered a valid float number, or is in the process of entering a valid number.
+# Because this is called after every key press, the following must also be valid:
+# * an empty string (to allow the user to completely delete the contents of the entry box)
+# * the minus sign (to allow the user to enter negative numbers)
+# Returns True if the contents are valid, returns False otherwise
 def validate_number(value):
     if value in ['', '-']:
         return True
@@ -14,6 +19,7 @@ def validate_number(value):
     return True
 
 
+# Create all the GUI elements of the application
 class MainApplication:
     def __init__(self):
         self.popup = None
@@ -67,6 +73,8 @@ class MainApplication:
         self.temperature_condition_combobox.bind('<<ComboboxSelected>>', self.update_temperature_entry)
         self.v_number = self.window.register(validate_number)
         self.i_number = self.window.register(self.invalid_number)
+        # Validates the entry box to make sure the user is entering a valid float.
+        # Calls validate_number to check if the contents are valid. If they are not valid, then invalid_number is called
         self.temperature_entry = tkinter.Entry(
             master=self.frame2,
             state='disabled',
@@ -101,6 +109,8 @@ class MainApplication:
         self.wind_condition_combobox = tkinter.ttk.Combobox(self.frame2, state='readonly', values=self.condition_list)
         self.wind_condition_combobox.current(0)
         self.wind_condition_combobox.bind('<<ComboboxSelected>>', self.update_wind_entry)
+        # Validates the entry box to make sure the user is entering a valid float.
+        # Calls validate_number to check if the contents are valid. If they are not valid, then invalid_number is called
         self.wind_entry = tkinter.Entry(
             master=self.frame2,
             state='disabled',
@@ -130,6 +140,8 @@ class MainApplication:
         self.frame3 = tkinter.LabelFrame(master=self.column_left, text='3. Select Duration', padx=5, pady=5)
 
         self.duration_label1 = tkinter.Label(master=self.frame3, text='For')
+        # Validates the entry box to make sure the user is entering a valid float.
+        # Calls validate_number to check if the contents are valid. If they are not valid, then invalid_number is called
         self.duration_entry = tkinter.Entry(
             master=self.frame3,
             width=5,
@@ -177,32 +189,44 @@ class MainApplication:
 
         self.window.mainloop()
 
+    # When 'Any' is selected, the entry box associated with temperature should be greyed out.
+    # It should be re-enabled when an option other than 'Any' is selected.
     def update_temperature_entry(self, event: tkinter.Event):
         if self.temperature_condition_combobox.get() == 'Any':
             self.temperature_entry.configure(state='disabled')
         else:
             self.temperature_entry.configure(state='normal')
 
+    # When 'Any' is selected, the entry box associated with precipitation should be greyed out.
+    # It should be re-enabled when an option other than 'Any' is selected.
     def update_precipitation_entry(self, event: tkinter.Event):
         if self.precipitation_condition_combobox.get() == 'Any':
             self.precipitation_entry.configure(state='disabled')
         else:
             self.precipitation_entry.configure(state='normal')
 
+    # When 'Any' is selected, the entry box associated with windspeed should be greyed out.
+    # It should be re-enabled when an option other than 'Any' is selected.
     def update_wind_entry(self, event: tkinter.Event):
         if self.wind_condition_combobox.get() == 'Any':
             self.wind_entry.configure(state='disabled')
         else:
             self.wind_entry.configure(state='normal')
 
+    # Called when an entry box is validated and the contents are found to be invalid
+    # Removes the last character entered from the entry box
     def invalid_number(self, index, widget_name, action):
         widget = self.window.nametowidget(widget_name)
         if action == '0':
             widget.delete(0, tkinter.END)
         else:
             widget.delete(index, index)
+        # After calling this method, validation must be re-enabled for some reason
         widget.after_idle(lambda: widget.configure(validate='key'))
 
+    # Handles everything that should happen when the user presses the 'query' button, including validating user input,
+    # assembling parameters, organising the progressbar popup and starting the thread that will perform the query and
+    # display its results
     def query_button_press(self):
         if not self.validate_input():
             return
@@ -228,6 +252,7 @@ class MainApplication:
         self.open_popup()
         threading.Thread(target=self.threaded_query, args=(query_parameters,)).start()
 
+    # Opens a popup that displays a progress bar while results are being fetched
     def open_popup(self):
         x = self.window.winfo_x()
         y = self.window.winfo_y()
@@ -241,10 +266,12 @@ class MainApplication:
         progress.grid(row=1, column=0, padx=10, pady=10)
         progress.start(10)
 
+    # Closes the popup
     def close_popup(self):
         self.popup.grab_release()
         self.popup.destroy()
 
+    # Handles fetching results. If an error occurs while doing this, display it in a popup and close the program.
     def threaded_query(self, query_parameters):
         try:
             results = query.make_query(query_parameters)
@@ -253,6 +280,7 @@ class MainApplication:
             messagebox.showerror(title='Error', message=str(e))
             self.window.quit()
 
+    # Validates input before submitting a query. Returns True if the input is valid, and returns False otherwise.
     def validate_input(self):
         temperature_condition = self.temperature_condition_combobox.get()
         precipitation_condition = self.precipitation_condition_combobox.get()
@@ -379,6 +407,7 @@ class MainApplication:
             return False
         return True
 
+    # Called after results have been obtained, and displays them in the panel to the right
     def display_results(self, results):
         # Refresh summary
         new_text = 'The specified conditions have occurred {} times over 126 years (1889-2015)'.format(len(results))
@@ -423,6 +452,7 @@ class MainApplication:
             label2.grid(row=i+1, column=1, sticky='nsew')
         self.close_popup()
 
+    # Event when the user uses the scrollwheel, ensures that using the scrollwheel will scroll the results.
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
 

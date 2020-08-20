@@ -5,12 +5,31 @@ import sys
 import os
 
 
+# For populating the station dropdown in the GUI
 def get_all_stations():
     with open(resource_path('data/locations.txt'), 'r') as file:
         stations = file.read().split('\n')
     return stations
 
 
+# What this program actually does. Takes parameters specified by the user and searches data to find instances that fit
+# those parameters. Expects parameters in the following structure:
+# parameters: {}
+#   temperature: {}
+#       condition: {} (Must be 'Any', 'Higher Than', or 'Lower Than')
+#       value: float
+#   precipitation: {}
+#       condition: {} (Must be 'Any', 'Higher Than', or 'Lower Than')
+#       value: float
+#   wind: {}
+#       condition: {} (Must be 'Any', 'Higher Than', or 'Lower Than')
+#       value: float
+# station: int
+# consecutive_days: int
+#
+# Should return results in the following structure:
+# results: []
+#   (start_date: Pandas Timeframe, end_date: Pandas Timeframe) <- tuple
 def make_query(parameters):
     # Load data
     data = xarray.open_mfdataset([
@@ -75,8 +94,10 @@ def make_query(parameters):
     return results
 
 
+# Helps the program find where files are when packaged into an application by PyInstaller
+# Works for dev environment as well
+# Returns the absolute path
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
