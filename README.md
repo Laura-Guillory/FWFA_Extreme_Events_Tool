@@ -39,6 +39,6 @@ For instructions on installing and using the tool, review the [tutorial.](TUTORI
 
 **Laura Guillory**  
 _Web Developer_  
-Centre for Applied Climate Science  
+Centre for Applied Climate Sciences  
 University of Southern Queensland
 [laura.guillory@usq.edu.au](mailto:laura.guillory@usq.edu.au)

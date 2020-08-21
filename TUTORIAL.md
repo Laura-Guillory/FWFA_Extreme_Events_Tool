@@ -40,7 +40,7 @@ The user must select "Higher Than" or "Lower Than" for at least one climate vari
 
 Below are some examples of search parameters; it is encouraged to try them out.
 
---Example 1--
+Example 1:
 
 Temperature:    Higher Than     40 °C 
 Precipitation:  Any             
@@ -49,7 +49,7 @@ Windspeed:      Any
 In this example, the program will search for instances where the temperature over 40 °C. It will not matter whether it 
 rained or what the windspeed was that day.
 
---Example 2--
+Example 2:
 
 Temperature:    Lower Than      5 °C 
 Precipitation:  Higher Than     5 mm
@@ -92,3 +92,11 @@ data was obtained as eastward and northward components, which was used to calcul
 in this program. 
 
 The date range for the data used in this program is 1 January 1889 to 31 December 2015.
+
+## Contacts
+
+**Laura Guillory**  
+_Web Developer_  
+Centre for Applied Climate Sciences  
+University of Southern Queensland
+[laura.guillory@usq.edu.au](mailto:laura.guillory@usq.edu.au)
