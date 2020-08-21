@@ -6,8 +6,8 @@
 
 ## Running the program
 
-To run the program, locate _ExtremeEvents.exe in the program files and double click. You may find it helpful to create 
-a shortcut (right click _ExtremeEvents.exe -> Create Shortcut; then move the shortcut to your desktop)
+To run the program, locate ExtremeEvents.exe and double click. You may find it helpful to create a shortcut 
+(right click ExtremeEvents.exe -> Create Shortcut; then move the shortcut to your desktop)
 
 ## Using the program
 

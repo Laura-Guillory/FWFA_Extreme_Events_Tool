@@ -20,12 +20,8 @@ running Linux you should be able to create your own shell script or run the buil
 that PyInstaller is not a cross-compiler - to make a Windows program you must build on a Windows machine; to make a
 Linux program you build in Linux, etc.
 
-The program is built as a one-folder bundle containing an executable and other files. While building a stand-alone 
-executable is possible (PyInstaller option --onefile), the resulting program has a significant startup delay due to the 
+The executable ExtremeEvents.exe will appear in the `dist` directory. It has a significant startup delay due to the 
 250MB+ of data that needs to be unpacked on startup.
-
-The program files will appear in the `dist` directory. To start the program, run ExtremeEvents.exe. It may be convenient
-to create a shortcut to ExtremeEvents.exe.
 
 If you experience errors while building, and you didn't change any code, submit the error as an issue on the 
 [GitHub Repository](https://github.com/Laura-Guillory/FWFA_Extreme_Events_Tool).

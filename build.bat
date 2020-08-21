@@ -1,5 +1,5 @@
 call activate "Extreme Events Tool"
-pyinstaller main.py --name _ExtremeEvents --onedir -y -w ^
+pyinstaller main.py --name ExtremeEvents --onefile -y -w ^
 --add-data "C:\ProgramData\Anaconda3\envs\Extreme Events Tool\Lib\site-packages\dask\dask.yaml;./dask" ^
 --add-data "C:\ProgramData\Anaconda3\envs\Extreme Events Tool\Lib\site-packages\distributed\distributed.yaml;./distributed" ^
 --add-data "data/locations.txt;./data" ^
