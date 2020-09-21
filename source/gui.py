@@ -1,7 +1,7 @@
 import tkinter
 from tkinter import ttk, messagebox, font
 from source import query
-import threading
+import queue
 
 
 # Used to ensure that the user has entered a valid float number, or is in the process of entering a valid number.
@@ -27,6 +27,7 @@ class MainApplication:
         self.results_canvas = None
         self.tutorial_canvas = None
         self.active_canvas = None
+        self.queue = None
 
         # Set up main window
         self.window = tkinter.Tk()
@@ -264,122 +265,9 @@ class MainApplication:
             }
         }
         self.open_popup()
-        threading.Thread(target=self.threaded_query, args=(query_parameters,)).start()
-
-    def help_button_press(self):
-        self.help_popup = tkinter.Toplevel()
-        self.help_popup.bind('<FocusIn>', self.focus_window)
-        self.tutorial_canvas = tkinter.Canvas(self.help_popup, width=550, height=500)
-        self.tutorial_canvas.pack(side=tkinter.LEFT)
-        self.active_canvas = self.tutorial_canvas
-        scrollbar = tkinter.Scrollbar(self.help_popup, command=self.tutorial_canvas.yview)
-        self.tutorial_canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-        self.tutorial_canvas.bind(
-            '<Configure>',
-            lambda e: self.tutorial_canvas.configure(scrollregion=self.tutorial_canvas.bbox('all'))
-        )
-        self.help_popup.bind_all('<MouseWheel>', self._on_mousewheel)
-        scrollable_frame = tkinter.Frame(self.tutorial_canvas)
-        self.tutorial_canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-
-        normal_font = font.Font(family='Helvetica', size=10)
-        heading_font = font.Font(family='Helvetica', size=11, weight='bold')
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='Tutorial')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            width=500,
-            text='The FWFA Extreme Events tool reviews historical records and report instances of extreme weather '
-                 'events. It allows the user to set desired thresholds for temperature, precipitation, and windspeed, '
-                 'and receive a report on the dates that these conditions have occurred in the past.\n\nThe options '
-                 'available are explained below.'
-        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='1. Select Location')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            justify=tkinter.LEFT,
-            width=520,
-            text='Here the user selects the location where they would like to examine historical records. The dropdown '
-                 'menu offers a choice of 555 stations around Australia.'
-        ).pack(fill=tkinter.X, expand=tkinter.YES)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='2. Select Conditions')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            width=500,
-            text='Here the user selects the desired thresholds for each climate variable (temperature, precipitation, '
-                 'and windspeed). The user can set thresholds for just one of the climate variables, two, or all '
-                 'three.\n\nFor each climate variable, the user can choose between "Higher Than", "Lower Than", or '
-                 '"Any".\n\n* Higher Than - the program will search for results where the climate variable was higher '
-                 'than the value in the box to the right\n* Lower Than - the program will search for results where the '
-                 'climate variable was lower than the value in the box to the right\n* Any - this climate variable '
-                 'will be ignored and will not impact results\n\nSelecting "Any" for all three climate variables is '
-                 'equivalent to not setting any threshold at all, and is not allowed. The user must select "Higher '
-                 'Than" or "Lower Than" for at least one climate variable to do a valid search.\n\nBelow are some '
-                 'examples of search parameters; it is encouraged to try them out.\n\nExample 1:\n\nTemperature:    '
-                 'Higher Than     40 °C\nPrecipitation:  Any\nWindspeed:      Any\n\nIn this example, the program will '
-                 'search for instances where the temperature over 40 °C. It will not matter whether it rained or what '
-                 'the windspeed was that day.\n\nExample 2:\n\nTemperature:    Lower Than      5 °C\nPrecipitation:  '
-                 'Higher Than     5 mm\nWindspeed:      Higher Than     5m/s\n\nIn this example, the program will '
-                 'search for instances where the temperature was under 5 °C, it was rainy and windy. Searches like '
-                 'this can be useful when examining windchill.'
-        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='3. Select Duration')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            width=500,
-            text='Here the user selects the minimum number of consecutive days necessary for the event to be included '
-                 'in the results. The default is 1. In general extreme events that last longer are more severe; for '
-                 'example, an extremely hot day can be manageable, but a heatwave lasting several weeks is a serious '
-                 'event.'
-        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='4. Getting results')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            width=500,
-            text='To search using the thresholds that you have selected, click "Query". After a loading time, your '
-                 'results should appear in the panel to the right.\n\nResults will consist of the first and last date '
-                 'where the event occurred, with one entry per event.\n\nConsecutive days that fit the search criteria '
-                 'will be considered to be one "event" spanning multiple days, even if the user specified a duration '
-                 'of one day. This is intended to simplify results.\n\nIf there are no results, try widening your '
-                 'search criteria or checking that the thresholds you have set are appropriate for the region that you '
-                 'have specified.'
-        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='Data sources')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            width=500,
-            text='This program requires accurate data for daily windspeed, precipitation, minimum temperature and '
-                 'maximum temperature, which is packaged with the application in netCDF format.\n\nPrecipitation and '
-                 'temperature data is sourced from LongPaddock\'s SILO database (found at '
-                 'https://www.longpaddock.qld.gov.au/silo/), which uses mathematical interpolation techniques to '
-                 'infill gaps in time series.\n\nWind data is sourced from NOAA-CIRES-DOE Twentieth Century Reanalysis '
-                 '(found at https://psl.noaa.gov/data/gridded/data.20thC_ReanV3.monolevel.html). Wind data was '
-                 'obtained as eastward and northward components, which was used to calculate the overall windspeed '
-                 'that is used in this program.\n\nThe date range for the data used in this program is 1 January 1889 '
-                 'to 31 December 2015.'
-        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='Contacts')\
-            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
-        tkinter.Message(
-            scrollable_frame,
-            font=normal_font,
-            justify=tkinter.LEFT,
-            width=500,
-            text='Laura Guillory\nWeb Developer\nCentre for Applied Climate Science\nUniversity of Southern Queensland'
-                 '\nlaura.guillory@usq.edu.au'
-        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        self.queue = queue.Queue()
+        query.ThreadedQuery(self.queue, query_parameters).start()
+        self.window.after(100, self.process_results)
 
     # Opens a popup that displays a progress bar while results are being fetched
     def open_popup(self):
@@ -399,15 +287,6 @@ class MainApplication:
     def close_popup(self):
         self.processing_popup.grab_release()
         self.processing_popup.destroy()
-
-    # Handles fetching results. If an error occurs while doing this, display it in a popup and close the program.
-    def threaded_query(self, query_parameters):
-        try:
-            results = query.make_query(query_parameters)
-            self.display_results(results)
-        except Exception as e:
-            messagebox.showerror(title='Error', message=str(e))
-            self.window.quit()
 
     # Validates input before submitting a query. Returns True if the input is valid, and returns False otherwise.
     def validate_input(self):
@@ -536,6 +415,13 @@ class MainApplication:
             return False
         return True
 
+    def process_results(self):
+        try:
+            results = self.queue.get(block=False)
+            self.display_results(results)
+        except queue.Empty:
+            self.window.after(100, self.process_results)
+
     # Called after results have been obtained, and displays them in the panel to the right
     def display_results(self, results):
         # Refresh summary
@@ -572,14 +458,12 @@ class MainApplication:
         table_head1.grid(row=0, column=0, sticky='nsew')
         table_head2.grid(row=0, column=1, sticky='nsew')
         for i, result in enumerate(results):
-            start_date = result[0].strftime('%Y-%m-%d')
-            end_date = result[1].strftime('%Y-%m-%d')
-            label1 = tkinter.Label(master=scrollable_frame, text=start_date, borderwidth=1, relief='ridge', bg='white',
-                                   anchor='w', padx=10)
-            label2 = tkinter.Label(master=scrollable_frame, text=end_date, borderwidth=1, relief='ridge', bg='white',
-                                   anchor='w', padx=10)
-            label1.grid(row=i+1, column=0, sticky='nsew')
-            label2.grid(row=i+1, column=1, sticky='nsew')
+            start_date = '%02d-%02d-%d' % (result[0].year, result[0].month, result[0].day)
+            end_date = '%02d-%02d-%d' % (result[1].year, result[1].month, result[1].day)
+            tkinter.Label(master=scrollable_frame, text=start_date, borderwidth=1, relief='ridge', bg='white',
+                          anchor='w', padx=10).grid(row=i+1, column=0, sticky='nsew')
+            tkinter.Label(master=scrollable_frame, text=end_date, borderwidth=1, relief='ridge', bg='white', anchor='w',
+                          padx=10).grid(row=i+1, column=1, sticky='nsew')
         self.close_popup()
 
     def focus_window(self, event):
@@ -587,6 +471,121 @@ class MainApplication:
             self.active_canvas = self.results_canvas
         elif event.widget == self.help_popup:
             self.active_canvas = self.tutorial_canvas
+
+    def help_button_press(self):
+        self.help_popup = tkinter.Toplevel()
+        self.help_popup.bind('<FocusIn>', self.focus_window)
+        self.tutorial_canvas = tkinter.Canvas(self.help_popup, width=550, height=500)
+        self.tutorial_canvas.pack(side=tkinter.LEFT)
+        self.active_canvas = self.tutorial_canvas
+        scrollbar = tkinter.Scrollbar(self.help_popup, command=self.tutorial_canvas.yview)
+        self.tutorial_canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+        self.tutorial_canvas.bind(
+            '<Configure>',
+            lambda e: self.tutorial_canvas.configure(scrollregion=self.tutorial_canvas.bbox('all'))
+        )
+        self.help_popup.bind_all('<MouseWheel>', self._on_mousewheel)
+        scrollable_frame = tkinter.Frame(self.tutorial_canvas)
+        self.tutorial_canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+
+        normal_font = font.Font(family='Helvetica', size=10)
+        heading_font = font.Font(family='Helvetica', size=11, weight='bold')
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='Tutorial')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            width=500,
+            text='The FWFA Extreme Events tool reviews historical records and report instances of extreme weather '
+                 'events. It allows the user to set desired thresholds for temperature, precipitation, and windspeed, '
+                 'and receive a report on the dates that these conditions have occurred in the past.\n\nThe options '
+                 'available are explained below.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='1. Select Location')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            justify=tkinter.LEFT,
+            width=520,
+            text='Here the user selects the location where they would like to examine historical records. The dropdown '
+                 'menu offers a choice of 555 stations around Australia.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='2. Select Conditions')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            width=500,
+            text='Here the user selects the desired thresholds for each climate variable (temperature, precipitation, '
+                 'and windspeed). The user can set thresholds for just one of the climate variables, two, or all '
+                 'three.\n\nFor each climate variable, the user can choose between "Higher Than", "Lower Than", or '
+                 '"Any".\n\n* Higher Than - the program will search for results where the climate variable was higher '
+                 'than the value in the box to the right\n* Lower Than - the program will search for results where the '
+                 'climate variable was lower than the value in the box to the right\n* Any - this climate variable '
+                 'will be ignored and will not impact results\n\nSelecting "Any" for all three climate variables is '
+                 'equivalent to not setting any threshold at all, and is not allowed. The user must select "Higher '
+                 'Than" or "Lower Than" for at least one climate variable to do a valid search.\n\nBelow are some '
+                 'examples of search parameters; it is encouraged to try them out.\n\nExample 1:\n\nTemperature:    '
+                 'Higher Than     40 °C\nPrecipitation:  Any\nWindspeed:      Any\n\nIn this example, the program will '
+                 'search for instances where the temperature over 40 °C. It will not matter whether it rained or what '
+                 'the windspeed was that day.\n\nExample 2:\n\nTemperature:    Lower Than      5 °C\nPrecipitation:  '
+                 'Higher Than     5 mm\nWindspeed:      Higher Than     5m/s\n\nIn this example, the program will '
+                 'search for instances where the temperature was under 5 °C, it was rainy and windy. Searches like '
+                 'this can be useful when examining windchill.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='3. Select Duration')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            width=500,
+            text='Here the user selects the minimum number of consecutive days necessary for the event to be included '
+                 'in the results. The default is 1. In general extreme events that last longer are more severe; for '
+                 'example, an extremely hot day can be manageable, but a heatwave lasting several weeks is a serious '
+                 'event.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='4. Getting results')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            width=500,
+            text='To search using the thresholds that you have selected, click "Query". After a loading time, your '
+                 'results should appear in the panel to the right.\n\nResults will consist of the first and last date '
+                 'where the event occurred, with one entry per event.\n\nConsecutive days that fit the search criteria '
+                 'will be considered to be one "event" spanning multiple days, even if the user specified a duration '
+                 'of one day. This is intended to simplify results.\n\nIf there are no results, try widening your '
+                 'search criteria or checking that the thresholds you have set are appropriate for the region that you '
+                 'have specified.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='Data sources')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            width=500,
+            text='This program requires accurate data for daily windspeed, precipitation, minimum temperature and '
+                 'maximum temperature, which is packaged with the application in netCDF format.\n\nPrecipitation and '
+                 'temperature data is sourced from LongPaddock\'s SILO database (found at '
+                 'https://www.longpaddock.qld.gov.au/silo/), which uses mathematical interpolation techniques to '
+                 'infill gaps in time series.\n\nWind data is sourced from NOAA-CIRES-DOE Twentieth Century Reanalysis '
+                 '(found at https://psl.noaa.gov/data/gridded/data.20thC_ReanV3.monolevel.html). Wind data was '
+                 'obtained as eastward and northward components, which was used to calculate the overall windspeed '
+                 'that is used in this program.\n\nThe date range for the data used in this program is 1 January 1889 '
+                 'to 31 December 2015.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='Contacts')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            justify=tkinter.LEFT,
+            width=500,
+            text='Laura Guillory\nWeb Developer\nCentre for Applied Climate Science\nUniversity of Southern Queensland'
+                 '\nlaura.guillory@usq.edu.au'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
 
     # Event when the user uses the scrollwheel, ensures that using the scrollwheel will scroll the results.
     def _on_mousewheel(self, event):
