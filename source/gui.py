@@ -32,7 +32,7 @@ class MainApplication:
         self.window = tkinter.Tk()
         self.window.columnconfigure(0, weight=1)
         self.window.rowconfigure(0, weight=1)
-        self.window.title('Forewarned is Forearmed - Historical Frequency of Extreme Events')
+        self.window.title('Historical Extreme Event Analysis Tool (HEEAT)')
         self.window.bind('<FocusIn>', self.focus_window)
 
         # Three columns
