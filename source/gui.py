@@ -28,6 +28,9 @@ class MainApplication:
         self.tutorial_canvas = None
         self.active_canvas = None
         self.queue = None
+        self.results_table = None
+        self.scrollable_frame = None
+        self.first_query = True
 
         # Set up main window
         self.window = tkinter.Tk()
@@ -190,17 +193,34 @@ class MainApplication:
         # Set up results section
         self.results_label = tkinter.Label(master=self.column_right, text='RESULTS', anchor='w')
         self.results_summary = tkinter.Message(master=self.column_right, text='Placeholder', anchor='w', width=210)
-        self.results_container = tkinter.Frame(
-            master=self.column_right,
-            width=230,
-            borderwidth=3,
-            relief='sunken'
-        )
+        results_container = tkinter.Frame(master=self.column_right, width=50, borderwidth=3, relief='sunken')
+        results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+        results_container.rowconfigure(0, weight=1)
+        self.results_canvas = tkinter.Canvas(results_container, width=200, borderwidth=0, highlightthickness=0)
+        scrollbar = tkinter.Scrollbar(results_container, orient="vertical", command=self.results_canvas.yview)
+        scrollbar.grid(row=0, column=1, sticky='nsew')
+        self.scrollable_frame = tkinter.Frame(self.results_canvas, width=200)
+        self.scrollable_frame.columnconfigure(0, weight=1)
+        self.scrollable_frame.columnconfigure(1, weight=1)
+        self.scrollable_frame.bind("<Configure>", lambda e: self.results_canvas.configure(scrollregion=self.scrollable_frame.bbox("all")))
+        canvas_frame = self.results_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.results_canvas.bind('<Configure>', lambda e: self.results_canvas.itemconfig(canvas_frame, width=e.width - 4))
+        self.results_canvas.configure(yscrollcommand=scrollbar.set)
+        self.window.bind_all('<MouseWheel>', self._on_mousewheel)
+        self.results_canvas.grid(row=0, column=0, sticky='nsew')
+        self.active_canvas = self.results_canvas
+
+        # Add headers to results
+        tkinter.Label(master=self.scrollable_frame, text='Start Date', borderwidth=1, relief='ridge', anchor='w', padx=10).grid(row=0, column=0, sticky='nsew')
+        tkinter.Label(master=self.scrollable_frame, text='End Date', borderwidth=1, relief='ridge', anchor='w', padx=10).grid(row=0, column=1, sticky='nsew')
 
         self.results_label.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
         self.results_summary.grid()
         self.results_summary.grid_forget()
-        self.results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+        results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+
+        # List of entries of results for re-use
+        self.entries = []
 
         self.window.mainloop()
 
@@ -267,7 +287,7 @@ class MainApplication:
         self.open_popup()
         self.queue = queue.Queue()
         query.ThreadedQuery(self.queue, query_parameters).start()
-        self.window.after(100, self.process_results)
+        self.process_results()
 
     # Opens a popup that displays a progress bar while results are being fetched
     def open_popup(self):
@@ -424,46 +444,46 @@ class MainApplication:
 
     # Called after results have been obtained, and displays them in the panel to the right
     def display_results(self, results):
+        # Update results in table
+        # Fallback in case of error during processing - clear the table
+        if results is None:
+            for i in range(len(self.entries)):
+                self.entries[i][0].grid_forget()
+                self.entries[i][1].grid_forget()
+            self.results_summary['text'] = ''
+            messagebox.showwarning(
+                title='Not enough memory',
+                message='Insufficient memory to complete your request.'
+            )
+            self.close_popup()
+            return
+
         # Refresh summary
         new_text = 'The specified conditions have occurred {} times over 126 years (1889-2015)'.format(len(results))
         self.results_summary['text'] = new_text
-        self.results_summary.grid(row=1, column=0, padx=10, pady=(5, 10), sticky='ew')
+        if self.first_query:
+            self.results_summary.grid(row=1, column=0, padx=10, pady=(5, 10), sticky='ew')
+            self.first_query = False
 
-        # Get rid of old results
-        self.results_container.destroy()
-
-        # Create canvas for table and scrollbar
-        self.results_container = tkinter.Frame(master=self.column_right, width=50, borderwidth=3, relief='sunken')
-        self.results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
-        self.results_container.rowconfigure(0, weight=1)
-        self.results_canvas = tkinter.Canvas(self.results_container, width=200)
-        scrollbar = tkinter.Scrollbar(self.results_container, orient="vertical", command=self.results_canvas.yview)
-        scrollbar.grid(row=0, column=1, sticky='nsew')
-        scrollable_frame = tkinter.Frame(self.results_canvas)
-        scrollable_frame.bind("<Configure>", lambda e: self.results_canvas.configure(scrollregion=scrollable_frame.bbox("all")))
-        scrollable_frame.columnconfigure(0, weight=1)
-        scrollable_frame.columnconfigure(1, weight=1)
-        canvas_frame = self.results_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        self.results_canvas.bind('<Configure>', lambda e: self.results_canvas.itemconfig(canvas_frame, width=e.width - 4))
-        self.results_canvas.configure(yscrollcommand=scrollbar.set)
-        self.window.bind_all('<MouseWheel>', self._on_mousewheel)
-        self.results_canvas.grid(row=0, column=0, sticky='nsew')
-        self.active_canvas = self.results_canvas
-
-        # Create results table
-        table_head1 = tkinter.Label(master=scrollable_frame, text='Start Date', borderwidth=1, relief='ridge',
-                                    anchor='w', padx=10)
-        table_head2 = tkinter.Label(master=scrollable_frame, text='End Date', borderwidth=1, relief='ridge', anchor='w',
-                                    padx=10)
-        table_head1.grid(row=0, column=0, sticky='nsew')
-        table_head2.grid(row=0, column=1, sticky='nsew')
+        # Repurpose Labels if existing. If more Labels than required, hide them temporarily.
         for i, result in enumerate(results):
             start_date = '%02d-%02d-%d' % (result[0].year, result[0].month, result[0].day)
             end_date = '%02d-%02d-%d' % (result[1].year, result[1].month, result[1].day)
-            tkinter.Label(master=scrollable_frame, text=start_date, borderwidth=1, relief='ridge', bg='white',
-                          anchor='w', padx=10).grid(row=i+1, column=0, sticky='nsew')
-            tkinter.Label(master=scrollable_frame, text=end_date, borderwidth=1, relief='ridge', bg='white', anchor='w',
-                          padx=10).grid(row=i+1, column=1, sticky='nsew')
+            if len(self.entries) <= i:
+                self.entries.append([])
+                self.entries[i].append(tkinter.Label(master=self.scrollable_frame, text=start_date, borderwidth=1, relief='ridge', anchor='w', padx=10, bg='white'))
+                self.entries[i].append(tkinter.Label(master=self.scrollable_frame, text=end_date, borderwidth=1, relief='ridge', anchor='w', padx=10, bg='white'))
+            else:
+                self.entries[i][0]['text'] = start_date
+                self.entries[i][1]['text'] = end_date
+            self.entries[i][0].grid(row=i + 1, column=0, sticky='nsew')
+            self.entries[i][1].grid(row=i + 1, column=1, sticky='nsew')
+        if len(self.entries) > len(results):
+            for i in range(len(results), len(self.entries)):
+                self.entries[i][0].grid_forget()
+                self.entries[i][1].grid_forget()
+
+        self.active_canvas = self.results_canvas
         self.close_popup()
 
     def focus_window(self, event):
