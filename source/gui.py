@@ -437,7 +437,21 @@ class MainApplication:
 
     def process_results(self):
         try:
-            results = self.queue.get(block=False)
+            errors, results = self.queue.get(block=False)
+            if errors is MemoryError:
+                messagebox.showwarning(
+                    title='Not enough memory',
+                    message='Insufficient memory to complete your request.'
+                )
+                self.close_popup()
+                return
+            elif errors:
+                messagebox.showwarning(
+                    title='Error',
+                    message='There was a problem with your search. Please report this error.'
+                )
+                self.close_popup()
+                return
             self.display_results(results)
         except queue.Empty:
             self.window.after(100, self.process_results)
