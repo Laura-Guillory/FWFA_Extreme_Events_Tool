@@ -64,6 +64,8 @@ Here the user selects the minimum number of consecutive days necessary for the e
 default is 1. In general extreme events that last longer are more severe; for example, an extremely hot day can be 
 manageable, but a heatwave lasting several weeks is a serious event.
 
+It should be noted that precipitation is calculated as accumulated precipitation over the entire time window.
+
 ### Getting results
 
 To search using the thresholds that you have selected, click "Query". After a loading time, your results should appear 

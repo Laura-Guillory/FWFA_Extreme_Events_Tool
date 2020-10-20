@@ -37,6 +37,8 @@ class MainApplication:
         self.window.columnconfigure(0, weight=1)
         self.window.rowconfigure(0, weight=1)
         self.window.title('Historical Extreme Event Analysis Tool (HEEAT)')
+        self.window.geometry('650x450')
+        self.window.minsize(650, 450)
         self.window.bind('<FocusIn>', self.focus_window)
 
         # Three columns
@@ -146,8 +148,9 @@ class MainApplication:
 
         # Set up duration section
         self.frame3 = tkinter.LabelFrame(master=self.column_left, text='3. Select Duration', padx=5, pady=5)
+        self.frame3.columnconfigure(2, weight=1)
 
-        self.duration_label1 = tkinter.Label(master=self.frame3, text='For')
+        self.duration_label1 = tkinter.Label(master=self.frame3, text='Over')
         # Validates the entry box to make sure the user is entering a valid float.
         # Calls validate_number to check if the contents are valid. If they are not valid, then invalid_number is called
         self.duration_entry = tkinter.Entry(
@@ -158,11 +161,17 @@ class MainApplication:
             invalidcommand=(self.i_number, '%i', '%W', '%d')
         )
         self.duration_entry.insert(0, '1')
-        self.duration_label2 = tkinter.Label(master=self.frame3, text='consecutive days')
+        self.duration_label2 = tkinter.Label(master=self.frame3, text='consecutive days *')
+        self.duration_message = tkinter.Message(
+            master=self.frame3,
+            width=350,
+            text='* Precipitation is calculated as accumulated precipitation over the number of days specified.'
+        )
 
-        self.duration_label1.grid(row=0, column=0, padx=10, pady=10)
-        self.duration_entry.grid(row=0, column=1, pady=10)
-        self.duration_label2.grid(row=0, column=2, padx=10, pady=10)
+        self.duration_label1.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+        self.duration_entry.grid(row=0, column=1, pady=10, sticky='w')
+        self.duration_label2.grid(row=0, column=2, padx=10, pady=10, sticky='w')
+        self.duration_message.grid(row=1, column=0, padx=10, pady=10, columnspan=3)
         self.frame3.grid(row=2, column=0, padx=10, pady=10, sticky='new', columnspan=2)
 
         # Query button
@@ -465,10 +474,6 @@ class MainApplication:
                 self.entries[i][0].grid_forget()
                 self.entries[i][1].grid_forget()
             self.results_summary['text'] = ''
-            messagebox.showwarning(
-                title='Not enough memory',
-                message='Insufficient memory to complete your request.'
-            )
             self.close_popup()
             return
 
@@ -578,7 +583,8 @@ class MainApplication:
             text='Here the user selects the minimum number of consecutive days necessary for the event to be included '
                  'in the results. The default is 1. In general extreme events that last longer are more severe; for '
                  'example, an extremely hot day can be manageable, but a heatwave lasting several weeks is a serious '
-                 'event.'
+                 'event.\n\nIt should be noted that precipitation is calculated as accumulated precipitation over the '
+                 'entire time window.'
         ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
         tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='4. Getting results')\
             .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
