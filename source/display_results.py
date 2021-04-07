@@ -34,5 +34,6 @@ class ThreadedDisplayResults(threading.Thread):
             for i in range(len(self.results), len(self.window.entries)):
                 self.window.entries[i][0].grid_forget()
                 self.window.entries[i][1].grid_forget()
+        self.window.results_canvas.yview_moveto(0)
         self.window.active_canvas = self.window.results_canvas
         self.window.close_popup()
