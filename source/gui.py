@@ -1,6 +1,6 @@
 import tkinter
 from tkinter import ttk, messagebox, font
-from source import query
+from source import query, display_results
 import queue
 
 
@@ -30,6 +30,7 @@ class MainApplication:
         self.queue = None
         self.results_table = None
         self.scrollable_frame = None
+        self.results = None
         self.first_query = True
 
         # Set up main window
@@ -53,7 +54,7 @@ class MainApplication:
         self.column_middle.grid(row=0, column=1, sticky='nsew')
         self.column_right = tkinter.Frame(master=self.window)
         self.column_right.grid(row=0, column=2, sticky='nsew')
-        self.column_right.rowconfigure(2, weight=1)
+        self.column_right.rowconfigure(3, weight=1)
 
         # Set up location section
         self.frame1 = tkinter.LabelFrame(master=self.column_left, text='1. Select Location', height=200, padx=5, pady=5)
@@ -200,8 +201,33 @@ class MainApplication:
         self.separator.grid(row=0, column=0, sticky='ns')
 
         # Set up results section
-        self.results_label = tkinter.Label(master=self.column_right, text='RESULTS', anchor='w')
+        self.results_label = tkinter.Label(
+            master=self.column_right,
+            text='Results',
+            font='TkDefaultFont 11 bold',
+            anchor='w'
+        )
         self.results_summary = tkinter.Message(master=self.column_right, text='Placeholder', anchor='w', width=210)
+
+        # Frame for show dates options
+        self.show_dates_frame = tkinter.Frame(master=self.column_right)
+
+        # Show dates button
+        self.show_dates_button = tkinter.Button(
+            master=self.show_dates_frame,
+            text='Show Dates',
+            width=10,
+            bg='#dddddd',
+            command=self.show_dates_button_press
+        )
+
+        # Always show dates checkbox
+        self.always_show_dates = tkinter.BooleanVar()
+        self.always_show_dates_checkbutton = tkinter.Checkbutton(master=self.show_dates_frame, text='Always show dates',
+                                                                 variable=self.always_show_dates, onvalue=True,
+                                                                 offvalue=False,
+                                                                 command=self.always_show_dates_checkbutton_press)
+
         results_container = tkinter.Frame(master=self.column_right, width=50, borderwidth=3, relief='sunken')
         results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
         results_container.rowconfigure(0, weight=1)
@@ -211,22 +237,30 @@ class MainApplication:
         self.scrollable_frame = tkinter.Frame(self.results_canvas, width=200)
         self.scrollable_frame.columnconfigure(0, weight=1)
         self.scrollable_frame.columnconfigure(1, weight=1)
-        self.scrollable_frame.bind("<Configure>", lambda e: self.results_canvas.configure(scrollregion=self.scrollable_frame.bbox("all")))
+        self.scrollable_frame.bind("<Configure>", lambda e: self.results_canvas.configure(
+            scrollregion=self.scrollable_frame.bbox("all"))
+        )
         canvas_frame = self.results_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        self.results_canvas.bind('<Configure>', lambda e: self.results_canvas.itemconfig(canvas_frame, width=e.width - 4))
+        self.results_canvas.bind('<Configure>', lambda e: self.results_canvas.itemconfig(canvas_frame,
+                                                                                         width=e.width - 4))
         self.results_canvas.configure(yscrollcommand=scrollbar.set)
         self.window.bind_all('<MouseWheel>', self._on_mousewheel)
         self.results_canvas.grid(row=0, column=0, sticky='nsew')
         self.active_canvas = self.results_canvas
 
         # Add headers to results
-        tkinter.Label(master=self.scrollable_frame, text='Start Date', borderwidth=1, relief='ridge', anchor='w', padx=10).grid(row=0, column=0, sticky='nsew')
-        tkinter.Label(master=self.scrollable_frame, text='End Date', borderwidth=1, relief='ridge', anchor='w', padx=10).grid(row=0, column=1, sticky='nsew')
+        tkinter.Label(master=self.scrollable_frame, text='Start Date', borderwidth=1, relief='ridge', anchor='w',
+                      padx=10).grid(row=0, column=0, sticky='nsew')
+        tkinter.Label(master=self.scrollable_frame, text='End Date', borderwidth=1, relief='ridge', anchor='w',
+                      padx=10).grid(row=0, column=1, sticky='nsew')
 
         self.results_label.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
         self.results_summary.grid()
         self.results_summary.grid_forget()
-        results_container.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+        self.show_dates_frame.grid(row=2, column=0, pady=0)
+        self.show_dates_button.grid(row=0, column=0, pady=0)
+        self.always_show_dates_checkbutton.grid(row=0, column=1, padx=5, pady=0)
+        results_container.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')
 
         # List of entries of results for re-use
         self.entries = []
@@ -461,18 +495,32 @@ class MainApplication:
                 )
                 self.close_popup()
                 return
-            self.display_results(results)
+            self.results = results
+            if self.always_show_dates.get():
+                self.display_summary(results)
+                self.show_dates_button_press()
+            else:
+                self.display_summary(results)
         except queue.Empty:
             self.window.after(100, self.process_results)
 
+    def show_dates_button_press(self):
+        # Open loading popup
+        self.open_popup()
+        self.queue = queue.Queue()
+        display_results.ThreadedDisplayResults(self.queue, self.results, self).start()
+
+    def always_show_dates_checkbutton_press(self):
+        if self.always_show_dates.get():
+            self.show_dates_button.configure(state=tkinter.DISABLED)
+        else:
+            self.show_dates_button.configure(state=tkinter.NORMAL)
+
     # Called after results have been obtained, and displays them in the panel to the right
-    def display_results(self, results):
+    def display_summary(self, results):
         # Update results in table
         # Fallback in case of error during processing - clear the table
         if results is None:
-            for i in range(len(self.entries)):
-                self.entries[i][0].grid_forget()
-                self.entries[i][1].grid_forget()
             self.results_summary['text'] = ''
             self.close_popup()
             return
@@ -483,22 +531,8 @@ class MainApplication:
         if self.first_query:
             self.results_summary.grid(row=1, column=0, padx=10, pady=(5, 10), sticky='ew')
             self.first_query = False
-
-        # Repurpose Labels if existing. If more Labels than required, hide them temporarily.
-        for i, result in enumerate(results):
-            start_date = '%02d-%02d-%d' % (result[0].year, result[0].month, result[0].day)
-            end_date = '%02d-%02d-%d' % (result[1].year, result[1].month, result[1].day)
-            if len(self.entries) <= i:
-                self.entries.append([])
-                self.entries[i].append(tkinter.Label(master=self.scrollable_frame, text=start_date, borderwidth=1, relief='ridge', anchor='w', padx=10, bg='white'))
-                self.entries[i].append(tkinter.Label(master=self.scrollable_frame, text=end_date, borderwidth=1, relief='ridge', anchor='w', padx=10, bg='white'))
-            else:
-                self.entries[i][0]['text'] = start_date
-                self.entries[i][1]['text'] = end_date
-            self.entries[i][0].grid(row=i + 1, column=0, sticky='nsew')
-            self.entries[i][1].grid(row=i + 1, column=1, sticky='nsew')
-        if len(self.entries) > len(results):
-            for i in range(len(results), len(self.entries)):
+        else:
+            for i in range(len(self.entries)):
                 self.entries[i][0].grid_forget()
                 self.entries[i][1].grid_forget()
 
