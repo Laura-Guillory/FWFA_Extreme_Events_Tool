@@ -21,10 +21,12 @@ class ThreadedDisplayResults(threading.Thread):
             end_date = '%02d-%02d-%d' % (result[1].year, result[1].month, result[1].day)
             if len(self.window.entries) <= i:
                 self.window.entries.append([])
-                self.window.entries[i].append(tkinter.Label(master=self.window.scrollable_frame, text=start_date, borderwidth=1,
-                                                     relief='ridge', anchor='w', padx=10, bg='white'))
-                self.window.entries[i].append(tkinter.Label(master=self.window.scrollable_frame, text=end_date, borderwidth=1,
-                                                     relief='ridge', anchor='w', padx=10, bg='white'))
+                self.window.entries[i].append(tkinter.Label(master=self.window.scrollable_frame, text=start_date,
+                                                            borderwidth=1, relief='ridge', anchor='w', padx=10,
+                                                            bg='white'))
+                self.window.entries[i].append(tkinter.Label(master=self.window.scrollable_frame, text=end_date,
+                                                            borderwidth=1, relief='ridge', anchor='w', padx=10,
+                                                            bg='white'))
             else:
                 self.window.entries[i][0]['text'] = start_date
                 self.window.entries[i][1]['text'] = end_date

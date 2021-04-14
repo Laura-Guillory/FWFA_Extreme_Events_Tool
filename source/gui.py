@@ -2,6 +2,7 @@ import tkinter
 from tkinter import ttk, messagebox, font
 from source import query, display_results
 import queue
+from functools import partial
 
 
 # Used to ensure that the user has entered a valid float number, or is in the process of entering a valid number.
@@ -32,6 +33,7 @@ class MainApplication:
         self.scrollable_frame = None
         self.results = None
         self.first_query = True
+        self.months_selected = [False] * 12
 
         # Set up main window
         self.window = tkinter.Tk()
@@ -39,7 +41,7 @@ class MainApplication:
         self.window.rowconfigure(0, weight=1)
         self.window.title('Historical Extreme Event Analysis Tool (HEEAT)')
         self.window.geometry('650x450')
-        self.window.minsize(650, 450)
+        self.window.minsize(650, 700)
         self.window.bind('<FocusIn>', self.focus_window)
 
         # Three columns
@@ -175,6 +177,26 @@ class MainApplication:
         self.duration_message.grid(row=1, column=0, padx=10, pady=10, columnspan=3)
         self.frame3.grid(row=2, column=0, padx=10, pady=10, sticky='new', columnspan=2)
 
+        # Set up Months section
+        self.frame4 = tkinter.LabelFrame(master=self.column_left, text='4. Select Months', padx=5, pady=5)
+        self.months_label = tkinter.Message(
+            master=self.frame4, width=350,
+            text='Select the months that you would like to filter for in your analysis. If you do not want to filter '
+                 'for months, click \'Select All\'.'
+        )
+        self.month_select_all_button = tkinter.Button(master=self.frame4, text='Select All', width=16, bg='#dddddd',
+                                                      command=self.select_all_months)
+        self.month_buttons = []
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
+                       'November', 'December']
+        for i in range(0, 12):
+            self.month_buttons.append(tkinter.Button(master=self.frame4, text=month_names[i], width=16))
+            self.month_buttons[i].config(command=partial(self.toggle_month, i))
+            self.month_buttons[i].grid(row=int(i / 3) + 2, column=i % 3)
+        self.months_label.grid(row=0, column=0, columnspan=3)
+        self.month_select_all_button.grid(row=1, column=0, pady=10)
+        self.frame4.grid(row=3, column=0, padx=10, pady=10, sticky='new', columnspan=2)
+
         # Query button
         self.query_button = tkinter.Button(
             master=self.column_left,
@@ -193,8 +215,8 @@ class MainApplication:
             command=self.help_button_press
         )
 
-        self.query_button.grid(row=3, column=0, padx=10, pady=10, sticky='nw')
-        self.help_button.grid(row=3, column=1, padx=10, pady=10, sticky='nw')
+        self.query_button.grid(row=4, column=0, padx=10, pady=10, sticky='nw')
+        self.help_button.grid(row=4, column=1, padx=10, pady=10, sticky='nw')
 
         # Separator
         self.separator = ttk.Separator(self.column_middle, orient='vertical')
@@ -325,7 +347,8 @@ class MainApplication:
                 'condition': self.wind_condition_combobox.get(),
                 'as_percentile': False,
                 'value': float(self.wind_entry.get()) if self.wind_entry.get() != '' else None
-            }
+            },
+            'months': self.months_selected
         }
         self.open_popup()
         self.queue = queue.Queue()
@@ -476,7 +499,15 @@ class MainApplication:
                         '\n\nDuration must be between 1 and 365 days.'
             )
             return False
+        if not any(self.months_selected):
+            messagebox.showwarning(
+                title='Invalid input',
+                message='Invalid month filter. You must select at least one month. To skip filtering for months, click '
+                '\'Select All\'.'
+            )
+            return False
         return True
+
 
     def process_results(self):
         try:
@@ -515,6 +546,18 @@ class MainApplication:
             self.show_dates_button.configure(state=tkinter.DISABLED)
         else:
             self.show_dates_button.configure(state=tkinter.NORMAL)
+
+    def toggle_month(self, month_i):
+        self.months_selected[month_i] = not self.months_selected[month_i]
+        if self.months_selected[month_i]:
+            self.month_buttons[month_i].config(relief='sunken', bg='#dddddd')
+        else:
+            self.month_buttons[month_i].config(relief='raised', bg='SystemButtonFace')
+
+    def select_all_months(self):
+        self.months_selected = [True] * 12
+        for i in range(0, 12):
+            self.month_buttons[i].config(relief='sunken', bg='#dddddd')
 
     # Called after results have been obtained, and displays them in the panel to the right
     def display_summary(self, results):

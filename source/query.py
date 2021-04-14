@@ -4,6 +4,7 @@ import pandas
 import sys
 import os
 import threading
+import utils
 
 
 class ThreadedQuery(threading.Thread):
@@ -24,6 +25,7 @@ class ThreadedQuery(threading.Thread):
     #   wind: {}
     #       condition: {} (Must be 'Any', 'Higher Than', or 'Lower Than')
     #       value: float
+    #   months: [] (True or False)
     # station: int
     # consecutive_days: int
     #
@@ -43,6 +45,15 @@ class ThreadedQuery(threading.Thread):
             # Narrow down data to parameters
             # Station
             data = data.where(data.region == self.parameters['station'], drop=True)
+
+            # Months
+            months_in_filter = []
+            for i, month in enumerate(self.parameters['months']):
+                if month:
+                    months_in_filter.append(i+1)
+            data = data.sel(time=numpy.in1d(data['time.month'], months_in_filter))
+
+            utils.save_to_netcdf(data, 'test.nc')
 
             # Temperature
             arrays_to_combine = []
