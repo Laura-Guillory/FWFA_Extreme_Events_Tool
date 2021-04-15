@@ -47,13 +47,19 @@ class ThreadedQuery(threading.Thread):
             data = data.where(data.region == self.parameters['station'], drop=True)
 
             # Months
-            months_in_filter = []
-            for i, month in enumerate(self.parameters['months']):
-                if month:
-                    months_in_filter.append(i+1)
-            data = data.sel(time=numpy.in1d(data['time.month'], months_in_filter))
-
-            utils.save_to_netcdf(data, 'test.nc')
+            filter_months = not all(self.parameters['months'])
+            month_mask = None
+            if filter_months:
+                months_in_filter = []
+                for i, month in enumerate(self.parameters['months']):
+                    if month:
+                        months_in_filter.append(i+1)
+                data.load()
+                month_mask = ~numpy.in1d(data['time.month'], months_in_filter)
+                data['precipitation'][:, month_mask] = numpy.nan
+                data['windspeed'][:, month_mask] = numpy.nan
+                data['minimum_temperature'][:, month_mask] = numpy.nan
+                data['maximum_temperature'][:, month_mask] = numpy.nan
 
             # Temperature
             arrays_to_combine = []
@@ -129,13 +135,18 @@ class ThreadedQuery(threading.Thread):
                     results.append((start_date, end_date))
             # If only precipitation
             elif not query_wind and not query_temperature:
-                for i_date in range(0, data.time.size):
+                i_date = 0
+                while i_date < data.time.size:
                     if precipitation_bool[i_date]:
-                        start_date = data.time.values[i_date - self.parameters['consecutive_days'] + 1]
-                        start_date = pandas.to_datetime(start_date)
-                        end_date = data.time.values[i_date]
-                        end_date = pandas.to_datetime(end_date)
-                        results.append((start_date, end_date))
+                        start_i = i_date - self.parameters['consecutive_days'] + 1
+                        if start_i < 0:
+                            start_i = 0
+                        if not filter_months or not(month_mask[start_i] or month_mask[i_date]):
+                            start_date = pandas.to_datetime(data.time.values[start_i])
+                            end_date = pandas.to_datetime(data.time.values[i_date])
+                            results.append((start_date, end_date))
+                            i_date = i_date + self.parameters['consecutive_days']
+                    i_date += 1
             # If combination of precipitation and other conditions
             elif query_precipitation and (query_wind or query_temperature):
                 for i_date in range(0, time_dimension):
