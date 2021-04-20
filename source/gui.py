@@ -240,11 +240,12 @@ class MainApplication:
             text='Show Dates',
             width=10,
             bg='#dddddd',
-            command=self.show_dates_button_press
+            command=self.show_dates_button_press,
+            state=tkinter.DISABLED
         )
 
         # Always show dates checkbox
-        self.always_show_dates = tkinter.BooleanVar()
+        self.always_show_dates = tkinter.BooleanVar(value=True)
         self.always_show_dates_checkbutton = tkinter.Checkbutton(master=self.show_dates_frame, text='Always show dates',
                                                                  variable=self.always_show_dates, onvalue=True,
                                                                  offvalue=False,
@@ -507,7 +508,6 @@ class MainApplication:
             )
             return False
         return True
-
 
     def process_results(self):
         try:
