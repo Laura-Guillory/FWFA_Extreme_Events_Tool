@@ -186,6 +186,8 @@ class MainApplication:
         )
         self.month_select_all_button = tkinter.Button(master=self.frame4, text='Select All', width=16, bg='#dddddd',
                                                       command=self.select_all_months)
+        self.month_deselect_all_button = tkinter.Button(master=self.frame4, text='Deselect All', width=16, bg='#dddddd',
+                                                        command=self.deselect_all_months)
         self.month_buttons = []
         month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
                        'November', 'December']
@@ -195,6 +197,7 @@ class MainApplication:
             self.month_buttons[i].grid(row=int(i / 3) + 2, column=i % 3)
         self.months_label.grid(row=0, column=0, columnspan=3)
         self.month_select_all_button.grid(row=1, column=0, pady=10)
+        self.month_deselect_all_button.grid(row=1, column=2, pady=10)
         self.frame4.grid(row=3, column=0, padx=10, pady=10, sticky='new', columnspan=2)
 
         # Query button
@@ -558,6 +561,11 @@ class MainApplication:
         self.months_selected = [True] * 12
         for i in range(0, 12):
             self.month_buttons[i].config(relief='sunken', bg='#dddddd')
+
+    def deselect_all_months(self):
+        self.months_selected = [False] * 12
+        for i in range(0, 12):
+            self.month_buttons[i].config(relief='raised', bg='SystemButtonFace')
 
     # Called after results have been obtained, and displays them in the panel to the right
     def display_summary(self, results):
