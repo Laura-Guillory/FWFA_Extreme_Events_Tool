@@ -671,7 +671,19 @@ class MainApplication:
                  'event.\n\nIt should be noted that precipitation is calculated as accumulated precipitation over the '
                  'entire time window.'
         ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
-        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='4. Getting results')\
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='4. Select Months')\
+            .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
+        tkinter.Message(
+            scrollable_frame,
+            font=normal_font,
+            width=500,
+            text='Here the user selects the months that they would like to filter for in their analysis. Results will '
+                 'only be included if they fall completely within the specified months. Any combination of months '
+                 '(January-December) can be selected.\n\nIf no filtering is desired, click "Select All" to include '
+                 'every month of the year. At least one month must be selected to complete a search.\n\nFor example, '
+                 'to restrict the search to Spring, one would select September, October and November.'
+        ).pack(fill=tkinter.X, expand=tkinter.YES, padx=20)
+        tkinter.Message(scrollable_frame, anchor='w', font=heading_font, width=500, text='5. Getting results')\
             .pack(fill=tkinter.X, expand=tkinter.YES, pady=10)
         tkinter.Message(
             scrollable_frame,

@@ -4,7 +4,6 @@ import pandas
 import sys
 import os
 import threading
-import utils
 
 
 class ThreadedQuery(threading.Thread):
